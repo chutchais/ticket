@@ -3,6 +3,7 @@ import win32gui,win32con,win32api,win32ui
 import pyautogui
 import re, traceback
 import time
+import sys
 
 
 
@@ -13,9 +14,16 @@ class WindowMgr:
         self.hwnd = None
 
     def find_window(self,title):
-        self.hwnd = win32gui.FindWindow(None, title)
-        assert self.hwnd
-        return self.hwnd
+        try:
+            self.hwnd = win32gui.FindWindow(None, title)
+            assert self.hwnd
+            return self.hwnd
+        except:
+            pyautogui.alert(text='Not found program name ' + title + '\n' 
+                            'Please open program before excute script', title='Unable to open program', button='OK')
+            print ('Not found program')
+            return None
+
 
     def set_onTop(self,hwnd):
         win32gui.SetForegroundWindow(hwnd)
@@ -98,9 +106,12 @@ def get_data(ticket):
     http = urllib3.PoolManager()
     url = 'http://svr-lcb1app:8080/e-Ticket/GETdata.php?barcode=' + ticket
     r = http.request('GET', url)
+    print(r.data)
     if r.status == 200:
         str = r.data.decode("utf-8")
         data={}
+        print(str)
+        print(len(str))
         if len(str)>0 :
             tmp = str.split('|')
             
@@ -129,9 +140,14 @@ def fill_data(hwnd,ticket_dict):
     if ticket_dict['description'].strip()=='OK':
         hwnd.wait(0,0x09)
         hwnd.wait(0,0x09)
-        pyautogui.typewrite('3', interval=secs_between_keys) #Full Out
         hwnd.wait(0,0x09)
-        pyautogui.typewrite(ticket_dict['container'].strip(), interval=secs_between_keys)
+        pyautogui.typewrite('3', interval=secs_between_keys) #Full Out
+        #hwnd.wait(0,0x09)
+        if ticket_dict['container'].strip() !='':
+            pyautogui.typewrite(ticket_dict['container'].strip(), interval=secs_between_keys)
+        else:
+            hwnd.wait(0,0x09)
+            hwnd.wait(0,0x09)
         hwnd.wait(0,0x09)
         pyautogui.typewrite('M', interval=secs_between_keys)
         hwnd.wait(0,0x09)
@@ -146,8 +162,8 @@ def fill_data(hwnd,ticket_dict):
 def main():
     try:      
         # regex = "Untitled - Notepad"
-        regex = "Microsoft Excel - Book1"
-        # regex = "Session A - [24 x 80]"
+        # regex = "Microsoft Excel - Book1"
+        regex = "Session A - [24 x 80]"
         state_left = win32api.GetKeyState(0x01)  # Left button down = 0 or 1. Button up = -127 or -128
         state_right = win32api.GetKeyState(0x02)  # Right button down = 0 or 1. Button up = -127 or -128
 
@@ -157,6 +173,8 @@ def main():
         # cW.SetAsForegroundWindow()
         w = WindowMgr()
         h = w.find_window(regex)
+        if h == None :
+            sys.exit()
         
         # x, y = win32gui.GetCursorPos()
         # positionStr = 'X: ' + str(x).rjust(4) + ' Y: ' + str(y).rjust(4)
@@ -193,11 +211,12 @@ def main():
         while True:
             ticket_number = pyautogui.prompt(text='Please scan Ticket number :', title='Scan Ticket Number' , default='')
             if ticket_number == 'quit' or ticket_number == None  :
-                print ('Bye Bye')
-                # 7afb6d85
+                print ('See you ,Bye Bye..')
+                # 7afb6d85 0632d4e5
                 
                 break
             else :
+                h = w.find_window(regex)
                 pos = w.set_onTop(h)
                 w.Maximize(h)
                 w.set_mouseXY()
@@ -209,7 +228,8 @@ def main():
                 # pyautogui.typewrite(ticket_number, interval=secs_between_keys)
                 # w.wait(0,0x09)
                 # pyautogui.typewrite(ticket_number, interval=secs_between_keys)
-                print ('Thanks')
+                pos = w.set_onTop(h)
+                print ('Finished...')
 
 
 
