@@ -4,11 +4,15 @@ import pyautogui
 import re, traceback
 import time
 import sys
+import tempfile
+import argparse
 
 
 
 class WindowMgr:
     """Encapsulates some calls to the winapi for window management"""
+    settingFile =''
+
     def __init__ (self):
         """Constructor"""
         self.hwnd = None
@@ -63,7 +67,9 @@ class WindowMgr:
         data={}
         data['x'] = x1-x
         data['y'] = y1-y
-        f = open("setting.json", "w")
+        # f = open("setting.json", "w")
+        # self.settingFile
+        f = open(settingFile, "w")
         f.write(str(data))
 
         f.close()
@@ -160,29 +166,36 @@ def fill_data(hwnd,ticket_dict):
 
 
 def main():
-    try:      
+    try:
+        ldir = tempfile.mkdtemp()
+        parser = argparse.ArgumentParser()
+        parser.add_argument('-d', '--directory', default=ldir)
+        args = parser.parse_args()
+        tmpDir = args.directory
+        print (tmpDir)
+
+        fname = tmpDir + 'setting.json'
+        settingFile = fname
+        print (fname)
         # regex = "Untitled - Notepad"
         # regex = "Microsoft Excel - Book1"
         regex = "Session A - [24 x 80]"
         state_left = win32api.GetKeyState(0x01)  # Left button down = 0 or 1. Button up = -127 or -128
         state_right = win32api.GetKeyState(0x02)  # Right button down = 0 or 1. Button up = -127 or -128
 
-        # cW = cWindow()
-        # cW.find_window_regex(regex)
-        # cW.Maximize()
-        # cW.SetAsForegroundWindow()
+        import os.path
+        
         w = WindowMgr()
         h = w.find_window(regex)
         if h == None :
             sys.exit()
         
-        # x, y = win32gui.GetCursorPos()
-        # positionStr = 'X: ' + str(x).rjust(4) + ' Y: ' + str(y).rjust(4)
-        # print (pos)
- 
-        import os.path
 
-        fname = 'setting.json'
+ 
+        
+
+        
+
         if os.path.isfile(fname) :
             # w.set_mouseXY()
             print ('Configuration is existing')
@@ -228,7 +241,9 @@ def main():
                 # pyautogui.typewrite(ticket_number, interval=secs_between_keys)
                 # w.wait(0,0x09)
                 # pyautogui.typewrite(ticket_number, interval=secs_between_keys)
-                pos = w.set_onTop(h)
+
+
+                # pos = w.set_onTop(h)
                 print ('Finished...')
 
 
@@ -238,7 +253,7 @@ def main():
 
 
     except:
-        f = open("log.txt", "w")
+        f = open(tmpDir + "log.txt", "w")
         f.write(traceback.format_exc())
         print(traceback.format_exc())
 
