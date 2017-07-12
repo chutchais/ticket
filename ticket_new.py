@@ -46,7 +46,7 @@ class WindowMgr:
         import json
         x,y,w,h = win32gui.GetWindowRect(self.hwnd)
         print ('Current Window X : %s  Y: %s' %(x,y))
-        fname = 'd:\\ticket\\setting.json'
+        fname = 'setting.json'
         if os.path.isfile(fname) :
             dict = eval(open(fname).read())
             x1 = dict['x']
@@ -69,7 +69,7 @@ class WindowMgr:
         data['y'] = y1-y
         # f = open("setting.json", "w")
         # self.settingFile
-        f = open('d:\\ticket\\setting.json', "w")
+        f = open(settingFile, "w")
         f.write(str(data))
 
         f.close()
@@ -140,6 +140,41 @@ def get_data(ticket):
     print (data)
     return data
 
+def get_data2():
+    import urllib3
+    http = urllib3.PoolManager()
+    url = 'http://svr-lcb1app:8080/e-Ticket/GETdata2.php'
+    r = http.request('GET', url)
+    print('Data returned %s' % r.data)
+
+    if r.status == 200:
+        str = r.data.decode("utf-8")
+        data={}
+        print(str)
+        print(len(str))
+        if len(str)>0 :
+            tmp = str.split('|')
+            
+            data['barcode']= tmp[0]
+            data['container']= tmp[1]
+            data['bl']= tmp[2]
+            data['status']= r.status
+            data['description']='OK'
+            data['url'] = url
+        else:
+            data['status']= 0
+            data['barcode']= ''
+            data['description']= 'No Barcode details' 
+            data['url'] = url
+    else :
+        data={}
+        data['status']= 9999
+        data['description'] = 'Unable to access Ticket web server'
+        data['url'] = url
+
+    # print (data)
+    return data
+
 def fill_data(hwnd,ticket_dict):
     # print (ticket_dict['barcode'])
     secs_between_keys=0.05
@@ -187,13 +222,8 @@ def main():
         
         w = WindowMgr()
         h = w.find_window(regex)
-        if h == None :
-            sys.exit()
-        
-
- 
-        
-
+        # if h == None :
+        #     sys.exit()
         
 
         if os.path.isfile(fname) :
@@ -219,32 +249,34 @@ def main():
 
                 time.sleep(0.001)
 
-        # w.wait(1,0x09)
-        # w.typer('hello')
+        prev_barcode=''
+        curr_barcode=''
         while True:
-            ticket_number = pyautogui.prompt(text='Please scan Ticket number :', title='Scan Ticket Number' , default='')
-            if ticket_number == 'quit' or ticket_number == None  :
-                print ('See you ,Bye Bye..')
-                # 7afb6d85 0632d4e5
-                
-                break
-            else :
-                h = w.find_window(regex)
-                pos = w.set_onTop(h)
-                w.Maximize(h)
-                w.set_mouseXY()
-                # print (ticket_number)
-                ticket_info = get_data(ticket_number)
+            ticket_info = get_data2()
+            if ticket_info['status'] == 200 :
+                curr_barcode = ticket_info['barcode']
+                if curr_barcode != prev_barcode :
+                    h = w.find_window(regex)
+                    pos = w.set_onTop(h)
+                    w.Maximize(h)
+                    w.set_mouseXY()
+                    fill_data (w,ticket_info)
+                    prev_barcode = curr_barcode
+            time.sleep(5)
+            # ticket_number = pyautogui.prompt(text='Please scan Ticket number :', title='Scan Ticket Number' , default='')
+            # if ticket_number == 'quit' or ticket_number == None  :
+            #     print ('See you ,Bye Bye..')
+            #     break
+            # else :
+            #     #----Older version----
+            #     h = w.find_window(regex)
+            #     pos = w.set_onTop(h)
+            #     w.Maximize(h)
+            #     w.set_mouseXY()
+            #     ticket_info = get_data(ticket_number)
+            #     fill_data (w,ticket_info)
 
-                fill_data (w,ticket_info)
-                # secs_between_keys=0.05
-                # pyautogui.typewrite(ticket_number, interval=secs_between_keys)
-                # w.wait(0,0x09)
-                # pyautogui.typewrite(ticket_number, interval=secs_between_keys)
-
-
-                pos = w.set_onTop(h)
-                print ('Finished...')
+            #     print ('Finished...')
 
 
 
