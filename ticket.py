@@ -109,8 +109,52 @@ an optional message """
 
 def get_data(ticket):
     import urllib3
+    # from lxml.html import parse
     http = urllib3.PoolManager()
-    url = 'http://svr-lcb1app:8080/e-Ticket/GETdata.php?barcode=' + ticket
+    #Validate
+    url = 'http://192.168.10.54:8080/e-Ticket/checking/validation.php?q=' + ticket
+    v = http.request('GET', url)
+    # v.data.decode('utf_8')
+    # New paring function
+    # received = parse(url).getroot()
+    # data = received.text_content().split(':')
+
+    received = v.data.decode('utf_8')
+    print (received)
+    data = received.split('|')
+    returned_ticket = data[0].strip()
+    returned_msg = data[1].strip()
+
+    print('Return Ticket : %s' % returned_ticket )
+    print('Return Message : %s' % returned_msg )
+    data={}
+    data['status']= v.status
+    data['description'] = ''
+    data['url'] = url
+    # Check Ticket Match
+    if ticket != returned_ticket :
+        error_msg = 'Return data is mis-match , Input ticket is %s ,but returned Ticket is %s' % (ticket,returned_ticket)
+        print (error_msg)
+        data['description'] = error_msg
+        return data
+    else:
+        print ('Ticket Data is match...')
+
+    #Check Ticket Result
+    if not 'PASS' in returned_msg:
+        error_msg ='Ticket is not pass validation : %s : %s' % (returned_ticket,returned_msg)
+        print (error_msg)
+        data['description'] = error_msg
+        return data
+    else:
+        print ('Validation is passed..')
+
+    # sys.exit()
+
+
+    
+    # url = 'http://svr-lcb1app:8080/e-Ticket/GETdata.php?barcode=' + ticket
+    url = 'http://192.168.10.54:8080/e-Ticket/GETdata.php?q=' + ticket
     r = http.request('GET', url)
     print(r.data)
     if r.status == 200:
@@ -121,9 +165,9 @@ def get_data(ticket):
         if len(str)>0 :
             tmp = str.split('|')
             
-            data['barcode']= tmp[0]
-            data['container']= tmp[1]
-            data['bl']= tmp[2]
+            data['barcode']= tmp[0].strip()
+            data['container']= tmp[1].strip()
+            data['bl']= tmp[2].strip()
             data['status']= r.status
             data['description']='OK'
             data['url'] = url
@@ -137,6 +181,18 @@ def get_data(ticket):
         data['description'] = 'Unable to access Ticket web server'
         data['url'] = url
 
+    # Validate Ticket Info.
+    print (len(ticket))
+    print (len(data['barcode']))
+    if ticket != data['barcode'] :
+        error_msg = 'Return Container data is mis-match , Input ticket is %s ,but returned Ticket is %s' % (ticket,data['barcode'])
+        print (error_msg)
+        data['description'] = error_msg
+        return data
+    else:
+        print ('Container Data is match')
+
+
     print (data)
     return data
 
@@ -144,9 +200,9 @@ def fill_data(hwnd,ticket_dict):
     # print (ticket_dict['barcode'])
     secs_between_keys=0.05
     if ticket_dict['description'].strip()=='OK':
-        hwnd.wait(0,0x09)
-        hwnd.wait(0,0x09)
-        hwnd.wait(0,0x09)
+        #hwnd.wait(0,0x09)
+        #hwnd.wait(0,0x09)
+        #hwnd.wait(0,0x09)
         pyautogui.typewrite('3', interval=secs_between_keys) #Full Out
         #hwnd.wait(0,0x09)
         if ticket_dict['container'].strip() !='':
