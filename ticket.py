@@ -74,6 +74,8 @@ class WindowMgr:
 
         f.close()
 
+
+
     def wait(self,seconds=1,message=None):
         """pause Windows for ? seconds and print
 an optional message """
@@ -107,6 +109,18 @@ an optional message """
         else:
             return True
 
+def saveTicketFile(ticketFile,ticketdata):
+    # data={}
+    # data['ticket'] = ticket
+    # data['container'] = container
+    import os.path
+    if os.path.isfile(ticketFile) :
+        print ('Delete ticket file')
+        os.remove(fname_ticket)
+    f = open(ticketFile, "w")
+    f.write(str(ticketdata))
+    f.close()
+
 def get_data(ticket):
     import urllib3
     # from lxml.html import parse
@@ -128,6 +142,7 @@ def get_data(ticket):
     print('Return Ticket : %s' % returned_ticket )
     print('Return Message : %s' % returned_msg )
     data={}
+    data['barcode']= ticket
     data['status']= v.status
     data['description'] = ''
     data['url'] = url
@@ -223,6 +238,7 @@ def fill_data(hwnd,ticket_dict):
 
 def main():
     try:
+        import os.path
         ldir = tempfile.mkdtemp()
         parser = argparse.ArgumentParser()
         parser.add_argument('-d', '--directory', default=ldir)
@@ -231,6 +247,16 @@ def main():
         print (tmpDir)
 
         fname = tmpDir + 'setting.json'
+
+        fname_ticket = tmpDir + 'ticket.json'
+        if os.path.isfile(fname_ticket) :
+            print ('Delete ticket file')
+            os.remove(fname_ticket)
+
+
+        # print ('Exit')
+        # sys.exit()
+
         settingFile = fname
         print (fname)
         # regex = "Untitled - Notepad"
@@ -239,7 +265,6 @@ def main():
         state_left = win32api.GetKeyState(0x01)  # Left button down = 0 or 1. Button up = -127 or -128
         state_right = win32api.GetKeyState(0x02)  # Right button down = 0 or 1. Button up = -127 or -128
 
-        import os.path
         
         w = WindowMgr()
         h = w.find_window(regex)
@@ -277,28 +302,37 @@ def main():
 
         # w.wait(1,0x09)
         # w.typer('hello')
+        # saveTicketFile (fname_ticket,'ticket1','cont2')
+
         while True:
             ticket_number = pyautogui.prompt(text='Please scan Ticket number :', title='Scan Ticket Number' , default='')
             if ticket_number == 'quit' or ticket_number == None  :
+                
+                # Delete Ticket File
+                if os.path.isfile(fname_ticket) :
+                    print ('Delete ticket file')
+                    os.remove(fname_ticket)
+                #========================
+
                 print ('See you ,Bye Bye..')
                 # 7afb6d85 0632d4e5
+
                 
                 break
             else :
+                # Delete Ticket File
+                if os.path.isfile(fname_ticket) :
+                    print ('Delete ticket file')
+                    os.remove(fname_ticket)
+                #========================
                 h = w.find_window(regex)
                 pos = w.set_onTop(h)
                 w.Maximize(h)
                 w.set_mouseXY()
                 # print (ticket_number)
                 ticket_info = get_data(ticket_number)
-
+                saveTicketFile (fname_ticket,ticket_info)
                 fill_data (w,ticket_info)
-                # secs_between_keys=0.05
-                # pyautogui.typewrite(ticket_number, interval=secs_between_keys)
-                # w.wait(0,0x09)
-                # pyautogui.typewrite(ticket_number, interval=secs_between_keys)
-
-
                 pos = w.set_onTop(h)
                 print ('Finished...')
 
